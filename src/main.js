@@ -7,26 +7,25 @@ import {
   error,
 } from './lib/logging';
 
-var BASE_URL = "https://www.imstores.com/Ingrammicromx";
-var INGRAM_LOGIN_URL = BASE_URL + "/login/login.aspx";
-var LOGGED_IN_URL = BASE_URL + "/default.aspx";
-var LOGOUT_URL = BASE_URL + "/login/logoff.aspx";
+const BASE_URL = "https://www.imstores.com/Ingrammicromx";
+const INGRAM_LOGIN_URL = `${BASE_URL}/login/login.aspx`;
+const LOGGED_IN_URL = `${BASE_URL}/default.aspx`;
+const LOGOUT_URL = `${BASE_URL}/login/logoff.aspx`;
+const COMPUTADORAS = `${BASE_URL}/ProductSearch.aspx?MatrixKey=000001`;
 
-var COMPUTADORAS = BASE_URL + "/ProductSearch.aspx?MatrixKey=000001";
+const USERNAME = "CN44";
+const PASSWORD = "VCPtec13";
 
-var USERNAME = "CN44";
-var PASSWORD = "VCPtec13";
-
-var webPage = require('webpage');
-var page = webPage.create();
+const webPage = require('webpage');
+const page = webPage.create();
 page.settings.userAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0';
 page.settings.resourceTimeout = 20000; // 20 seconds
-page.onResourceTimeout = function(e) {
+page.onResourceTimeout = (e) => {
   error(e.errorString + " Code: " + e.errorCode + ", Url: " + e.url);
   phantom.exit(1);
 };
-page.onError = function(msg, trace) {
-  var msgStack = [msg];
+page.onError = (msg, trace) => {
+  let msgStack = [msg];
   if (trace && trace.length) {
     msgStack.push('TRACE:');
     trace.forEach(function(t) {
@@ -35,8 +34,8 @@ page.onError = function(msg, trace) {
   }
   error(msgStack.join('\n'));
 };
-phantom.onError = function(msg, trace) {
-  var msgStack = [msg];
+phantom.onError = (msg, trace) => {
+  let msgStack = [msg];
   if (trace && trace.length) {
     msgStack.push('TRACE:');
     trace.forEach(function(t) {
