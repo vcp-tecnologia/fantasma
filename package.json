@@ -1,0 +1,39 @@
+{
+  "name": "fantasma",
+  "version": "1.0.0",
+  "description": "Program to scrape product listings from vendor sources. Product listings are entered onto a PostgreSQL database.",
+  "main": "src/main.js",
+  "scripts": {
+    "clean": "rm -r node_modules/* dist/*",
+    "build": "webpack",
+    "start": "./node_modules/phantomjs/bin/phantomjs --debug=true dist/scraper.js 2>&1 | tee \"$(date '+%F-%T')-run.log\"",
+    "flow": "flow; test $? -eq 0 -o $? -eq 2",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "scrape"
+  ],
+  "author": "Rafael Ferrer (rmferrer@gmail.com)",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/vcp-tecnologia/fantasma.git"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "babel-cli": "^6.10.1",
+    "babel-core": "^6.10.4",
+    "babel-loader": "^6.2.4",
+    "babel-plugin-transform-flow-strip-types": "^6.14.0",
+    "babel-plugin-transform-runtime": "^6.9.0",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-preset-stage-0": "^6.5.0",
+    "flow-bin": "^0.32.0",
+    "webpack": "^1.13.1"
+  },
+  "dependencies": {
+    "babel-polyfill": "^6.9.1",
+    "babel-runtime": "^6.9.2",
+    "json-loader": "^0.5.4",
+    "phantomjs": "^2.1.7"
+  }
+}
