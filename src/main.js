@@ -94,12 +94,12 @@ function handleLoginPage(status) {
     }
     else {
       info("Successfully logged in. Current url is: " + page.url);
-      page.open(COMPUTADORAS, handleProductPage);
+      page.open(COMPUTADORAS, handleProductCategoryPage);
     }
   }, 10000);
 }
 
-function scrapeProductPage() {
+function scrapeProductPaginatedPage() {
   // if (!window.$){
   //   return {
   //     "status": "error"
@@ -153,7 +153,28 @@ function scrapeProductPage() {
   }
 }
 
-function handleProductPage(status) {
+function scrapeProductCategoryPage() {
+  var retVal = page.evaluate(scrapeProductPaginatedPage);
+
+  if (retVal.status === "error") {
+    error(retVal.message);
+    logoff(page, 1);
+  }
+
+  var products = retVal.products;
+  var i, product;
+
+  debug("Retrieved data for " + products.length + " products. ");
+
+  for (i = 0; i < products.length; ++i) {
+    product = products[i];
+    log(JSON.stringify(product), "DATA");
+  }
+
+  logoff(page, 0);
+}
+
+function handleProductCategoryPage(status) {
   exitOnFailedStatus(status, page);
 
   // Change the number of results per page to minimize pagination
@@ -162,27 +183,8 @@ function handleProductPage(status) {
     $('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').trigger('change');
   });
 
-    // Wait wait for successfull refresh
-  window.setTimeout(function() {
-    var retVal = page.evaluate(scrapeProductPage);
-
-    if (retVal.status === "error") {
-      error(retVal.message);
-      logoff(page, 1);
-    }
-
-    var products = retVal.products;
-    var i, product;
-
-    debug("Retrieved data for " + products.length + " products. ");
-
-    for (i = 0; i < products.length; ++i) {
-      product = products[i];
-      log(JSON.stringify(product), "DATA");
-    }
-
-    logoff(page, 0);
-  }, 10000);
+  // Wait wait for successfull refresh and proceed to scrape the whole category
+  window.setTimeout(scrapeProductCategoryPage, 10000);
 }
 
 page.open(INGRAM_LOGIN_URL, handleLoginPage);
