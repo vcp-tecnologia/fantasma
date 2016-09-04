@@ -128,7 +128,7 @@ function scrapeProductPage() {
     inventoryStore = match ? match[1] : "NULL";
     inventoryTotal = match ? match[2] : "NULL";
 
-    match = partNumRegex.exec($('.Row')[0].children[0].children[0].children[0].children[0].children[1].innerText.trim());
+    match = partNumRegex.exec($('.Row')[i].children[0].children[0].children[0].children[0].children[1].innerText.trim());
     partnum = match ? match[1] : "NULL";
 
     match = skuRegex.exec($('.Row')[i].children[0].children[0].children[0].children[0].children[2].innerText.trim());
