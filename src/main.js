@@ -225,35 +225,38 @@ function getCurrentPage(options){
 /* APPLICATION LOGIC FUNCTIONS */
 
 function paginateAndScrapeCategoryPage() { 
-  let pagenum;
+  let pageNumber = null;
 
   const intervalId = window.setInterval(function() {
-    pagenum = page.evaluate(getCurrentPage, {
+    let newPageNumber = page.evaluate(getCurrentPage, {
       currentPageSelector: CURRENT_PAGE_SELECTOR
     });
 
-    page.evaluate(advanceResultsPage, {
-      nooop: pagenum === 1,
-      nextPageSelector: NEXT_PAGE_SELECTOR
-    });
+    if (newPageNumber !== pageNumber) {
+      pageNumber = newPageNumber;
+      page.evaluate(advanceResultsPage, {
+        nooop: pageNumber === 1,
+        nextPageSelector: NEXT_PAGE_SELECTOR
+      });
 
-    const retVal = page.evaluate(scrapeProductPaginatedPage, {
-      baseUrl: BASE_URL,
-      nullValue: NULL_VALUE
-    });
-    
-    if (retVal.status === 'error') {
-      error(retVal.message);
-      logoff(page, ERROR_EXIT_CODE);
-    }
+      const retVal = page.evaluate(scrapeProductPaginatedPage, {
+        baseUrl: BASE_URL,
+        nullValue: NULL_VALUE
+      });
+      
+      if (retVal.status === 'error') {
+        error(retVal.message);
+        logoff(page, ERROR_EXIT_CODE);
+      }
 
-    let products = retVal.products;
+      let products = retVal.products;
 
-    debug(`Retrieved data for ${products.length} products.`);
+      debug(`Retrieved paginated data for ${products.length} products. Page ${pageNumber}`);
 
-    for (let i = 0; i < products.length; ++i) {
-      let product = products[i];
-      log(JSON.stringify(product), 'DATA');
+      for (let i = 0; i < products.length; ++i) {
+        let product = products[i];
+        log(JSON.stringify(product), 'DATA');
+      }
     }
   }, PAGINTATION_WAIT_TIME);
 
