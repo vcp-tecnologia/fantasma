@@ -1,3 +1,5 @@
+/* @flow */
+
 // TODO remove all jquery dependencies inside evaluate code
 // modularize code, remove page global, pass it around functions
 
