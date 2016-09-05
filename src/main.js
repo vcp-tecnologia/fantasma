@@ -113,7 +113,7 @@ function handleLoginPage(status) {
 function scrapeProductPaginatedPage() {
   var BASE_URL = 'https://www.imstores.com/Ingrammicromx';
 
-  var rows = $('.Row');
+  var rows = document.querySelectorAll('.Row');
   var numrows = rows.length;
 
   var inventoryRegex = /^(\d)+ +\[(\d)+\]$/;
@@ -127,19 +127,20 @@ function scrapeProductPaginatedPage() {
   var products = [];
 
   for(i = 0; i < numrows; ++i) {
-    path = BASE_URL + '/' + $('.Row')[i].children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
+    var row = rows[i];
+    path = BASE_URL + '/' + row.children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
 
-    match = inventoryRegex.exec($('.Row')[i].children[2].innerText.trim());
+    match = inventoryRegex.exec(row.children[2].innerText.trim());
     inventoryStore = match ? match[1] : 'NULL';
     inventoryTotal = match ? match[2] : 'NULL';
 
-    match = partNumRegex.exec($('.Row')[i].children[0].children[0].children[0].children[0].children[1].innerText.trim());
+    match = partNumRegex.exec(row.children[0].children[0].children[0].children[0].children[1].innerText.trim());
     partnum = match ? match[1] : 'NULL';
 
-    match = skuRegex.exec($('.Row')[i].children[0].children[0].children[0].children[0].children[2].innerText.trim());
+    match = skuRegex.exec(row.children[0].children[0].children[0].children[0].children[2].innerText.trim());
     sku = match ? match[1] : 'NULL';
 
-    match = priceRegex.exec($('.Row')[i].children[3].innerText.trim());
+    match = priceRegex.exec(row.children[3].innerText.trim());
     price = match ? match[1] : 'NULL';
 
     products.push({
@@ -185,7 +186,7 @@ function scrapeProductCategoryPage() {
 }
 
 function changeResultsPerPage(resultsPerPage) {
-  $('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').val(resultsPerPage);
+  document.querySelector('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').value = resultsPerPage;
   $('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').trigger('change');  
 }
 
