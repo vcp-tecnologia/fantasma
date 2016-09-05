@@ -156,25 +156,25 @@ function scrapeProductPaginatedPage(options) {
   var numrows = rows.length;
 
   var inventoryRegex = /^(\d)+ +\[(\d)+\]$/;
-  var partNumRegex = /^Part#: +(.*)$/;
+  var partNumberRegex = /^Part#: +(.*)$/;
   var skuRegex = /^SKU: +(.*)$/;
   var priceRegex = /^\$ +([0-9\.,]+)( +\$ +([0-9\.,]+))?$/;
 
-  var path, inventoryStore, inventoryTotal, sku, partnum, price, discountedPrice;
+  var productUrl, inventoryStore, inventoryTotal, sku, partNumber, price, discountedPrice;
 
   var i, match;
   var products = [];
 
   for(i = 0; i < numrows; ++i) {
     var row = rows[i];
-    path = options.baseUrl + '/' + row.children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
+    productUrl = options.baseUrl + '/' + row.children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
 
     match = inventoryRegex.exec(row.children[2].innerText.trim());
     inventoryStore = match ? match[1] : options.nullValue;
     inventoryTotal = match ? match[2] : options.nullValue;
 
-    match = partNumRegex.exec(row.children[0].children[0].children[0].children[0].children[1].innerText.trim());
-    partnum = match ? match[1] : options.nullValue;
+    match = partNumberRegex.exec(row.children[0].children[0].children[0].children[0].children[1].innerText.trim());
+    partNumber = match ? match[1] : options.nullValue;
 
     match = skuRegex.exec(row.children[0].children[0].children[0].children[0].children[2].innerText.trim());
     sku = match ? match[1] : options.nullValue;
@@ -184,13 +184,13 @@ function scrapeProductPaginatedPage(options) {
     discountedPrice = match ? (match[3] || options.nullValue) : options.nullValue;
 
     products.push({
-      path: path,
-      inventoryStore: inventoryStore,
-      inventoryTotal: inventoryTotal,
-      partnum: partnum,
+      product_url: productUrl,
+      inventory_store: inventoryStore,
+      inventory_total: inventoryTotal,
+      part_number: partNumber,
       sku: sku,
       price: price,
-      discountedPrice: discountedPrice
+      discounted_price: discountedPrice
     });
   }
 
