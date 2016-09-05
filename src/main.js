@@ -255,6 +255,10 @@ function paginateAndScrapeCategoryPage() {
         log(JSON.stringify(product), 'DATA');
       }
     }
+    else {
+      clearInterval(intervalId);
+      logoff(page, SUCCESS_EXIT_CODE);
+    }
   }, PAGINTATION_WAIT_TIME);
 
   window.setTimeout(function() {
