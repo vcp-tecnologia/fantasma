@@ -1,4 +1,6 @@
 // TODO remove all jquery dependencies inside evaluate code
+// modularize code, remove page global, pass it around functions
+
 
 import {
   log,
@@ -22,19 +24,22 @@ const PASSWORD = 'VCPtec13';
 
 const ERROR_EXIT_CODE = 1;
 const SUCCESS_EXIT_CODE = 0;
-const RESOURCE_TIMEOUT = 20000; /* 20 seconds */
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0';
 
 const LOGIN_FORM_USERNAME_SELECTOR = 'input[name="UserName"]';
 const LOGIN_FORM_PASSWORD_SELECTOR = 'input[name="txtPassword"]';
 const LOGIN_FORM_SUBMIT_SELECTOR = '[name="LoginButton"]';
 const RESULTS_PER_PAGE_SELECTOR = '[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]';
-const NEXT_PAGE_SELECTOR = '[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]';
+const NEXT_PAGE_SELECTOR = '#ctl00_ContentPlaceHolder1_btnNext';
+const CURRENT_PAGE_SELECTOR = '#ctl00_ContentPlaceHolder1_ddlPageNumber';
 
 const NULL_VALUE = 'NULL';
 
+const RESOURCE_TIMEOUT = 20000; /* 20 seconds */
 const LOGIN_WAIT_TIME = 10000; /* 10 seconds */
 const CHANGE_RESULTS_PER_PAGE_WAIT_TIME = 10000; /* 10 seconds */
+const PAGINTATION_WAIT_TIME = 10000; /* 10 seconds */
+const SCRAPING_TOTAL_TIMEOUT = 180000;
 const RESULTS_PER_PAGE = 50;
 
 /* END CONSTANTS */
@@ -141,7 +146,7 @@ function fillLoginForm(options) {
 
 function changeResultsPerPage(options) {
   document.querySelector(options.resultsPerPageSelector).value = options.resultsPerPage;
-  $(options.nextPageSelector).trigger('change');  
+  $(options.resultsPerPageSelector).trigger('change');  
 }
 
 function scrapeProductPaginatedPage(options) {
@@ -151,9 +156,9 @@ function scrapeProductPaginatedPage(options) {
   var inventoryRegex = /^(\d)+ +\[(\d)+\]$/;
   var partNumRegex = /^Part#: +(.*)$/;
   var skuRegex = /^SKU: +(.*)$/;
-  var priceRegex = /^\$ +([0-9\.,]+)$/;
+  var priceRegex = /^\$ +([0-9\.,]+)( +\$ +([0-9\.,]+))?$/;
 
-  var path, inventoryStore, inventoryTotal, sku, partnum, price;
+  var path, inventoryStore, inventoryTotal, sku, partnum, price, discountedPrice;
 
   var i, match;
   var products = [];
@@ -172,8 +177,9 @@ function scrapeProductPaginatedPage(options) {
     match = skuRegex.exec(row.children[0].children[0].children[0].children[0].children[2].innerText.trim());
     sku = match ? match[1] : options.nullValue;
 
-    match = priceRegex.exec(row.children[3].innerText.trim());
-    price = match ? match[1] : options.nullValue;
+    match = priceRegex.exec(row.children[3].innerText.trim().replace('\n', ' '));
+    price = match ? (match[1] || options.nullValue) : options.nullValue;
+    discountedPrice = match ? (match[3] || options.nullValue) : options.nullValue;
 
     products.push({
       path: path,
@@ -181,7 +187,8 @@ function scrapeProductPaginatedPage(options) {
       inventoryTotal: inventoryTotal,
       partnum: partnum,
       sku: sku,
-      price: price
+      price: price,
+      discountedPrice: discountedPrice
     });
   }
 
@@ -189,6 +196,21 @@ function scrapeProductPaginatedPage(options) {
     'status': 'success',
     'products': products
   };
+}
+
+function advanceResultsPage(options){
+  if(options.noop) {
+    return;
+  }
+  var nextPage = document.querySelector(options.nextPageSelector);
+  if (nextPage) {
+    nextPage.click();
+  }
+}
+
+function getCurrentPage(options){
+  var currentPage = document.querySelector(options.currentPageSelector).value;
+  return parseInt(currentPage);
 }
 
 /* END BROWSER EVALUATED FUNCTIONS */
@@ -200,34 +222,45 @@ function scrapeProductPaginatedPage(options) {
 
 /* APPLICATION LOGIC FUNCTIONS */
 
-function scrapeProductCategoryPage() {
-  let products = [];
- 
-  while(true){
-    const options = {
+function paginateAndScrapeProductCategoryPage() { 
+  let pagenum;
+
+  const intervalId = window.setInterval(function() {
+    const optionsCurrentPage = {
+      currentPageSelector: CURRENT_PAGE_SELECTOR
+    }
+    pagenum = page.evaluate(getCurrentPage, optionsCurrentPage);
+
+    let optionsAdvancePage = {
+      nooop: pagenum === 1,
+      nextPageSelector: NEXT_PAGE_SELECTOR
+    };
+    page.evaluate(advanceResultsPage, optionsAdvancePage);
+
+    const optionsScrapePaginatedPage = {
       baseUrl: BASE_URL,
       nullValue: NULL_VALUE
     };
-    const retVal = page.evaluate(scrapeProductPaginatedPage, options);
+    const retVal = page.evaluate(scrapeProductPaginatedPage, optionsScrapePaginatedPage);
     if (retVal.status === 'error') {
       error(retVal.message);
       logoff(page, ERROR_EXIT_CODE);
     }
-    for (let i = 0; i < retVal.products.length; ++i) {
-      products.push(retVal.products[i]);
+
+    let products = retVal.products;
+
+    debug(`Retrieved data for ${products.length} products.`);
+
+    for (let i = 0; i < products.length; ++i) {
+      let product = products[i];
+      log(JSON.stringify(product), 'DATA');
     }
+  }, PAGINTATION_WAIT_TIME);
 
-    break;
-  }
-
-  debug(`Retrieved data for ${products.length} products.`);
-
-  for (let i = 0; i < products.length; ++i) {
-    let product = products[i];
-    log(JSON.stringify(product), 'DATA');
-  }
-
-  logoff(page, SUCCESS_EXIT_CODE);
+  window.setTimeout(function() {
+    clearInterval(intervalId);
+    logoff(page, SUCCESS_EXIT_CODE);
+  }, SCRAPING_TOTAL_TIMEOUT);
 }
 
 function handleProductCategoryPage(status) {
@@ -236,13 +269,12 @@ function handleProductCategoryPage(status) {
   /* Change the number of results per page to minimize pagination */
   const options = { 
     resultsPerPage: RESULTS_PER_PAGE,
-    resultsPerPageSelector: RESULTS_PER_PAGE_SELECTOR,
-    nextPageSelector: NEXT_PAGE_SELECTOR
+    resultsPerPageSelector: RESULTS_PER_PAGE_SELECTOR
   };
   page.evaluate(changeResultsPerPage, options);
 
-  /* Wait wait for successfull refresh and proceed to scrape the whole category */
-  window.setTimeout(scrapeProductCategoryPage, CHANGE_RESULTS_PER_PAGE_WAIT_TIME);
+  /* Wait for successfull refresh and proceed to scrape the whole paginated subcategory */
+  window.setTimeout(paginateAndScrapeProductCategoryPage, CHANGE_RESULTS_PER_PAGE_WAIT_TIME);
 }
 
 function handleLoginPage(status) {
