@@ -222,7 +222,7 @@ function getCurrentPage(options){
 
 /* APPLICATION LOGIC FUNCTIONS */
 
-function paginateAndScrapeProductCategoryPage() { 
+function paginateAndScrapeCategoryPage() { 
   let pagenum;
 
   const intervalId = window.setInterval(function() {
@@ -271,7 +271,7 @@ function handleProductCategoryPage(status) {
   });
 
   /* Wait for successfull refresh and proceed to scrape the whole paginated subcategory */
-  window.setTimeout(paginateAndScrapeProductCategoryPage, CHANGE_RESULTS_PER_PAGE_WAIT_TIME);
+  window.setTimeout(paginateAndScrapeCategoryPage, CHANGE_RESULTS_PER_PAGE_WAIT_TIME);
 }
 
 function handleLoginPage(status) {
