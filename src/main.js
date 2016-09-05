@@ -1,4 +1,4 @@
-// TODO fix jquery detection and injection
+// TODO remove all jquery dependencies inside evaluate code
 
 import {
   log,
@@ -6,6 +6,10 @@ import {
   info,
   error,
 } from './lib/logging';
+
+
+
+/* CONSTANTS */
 
 const BASE_URL = 'https://www.imstores.com/Ingrammicromx';
 const INGRAM_LOGIN_URL = `${BASE_URL}/login/login.aspx`;
@@ -16,20 +20,39 @@ const COMPUTADORAS = `${BASE_URL}/ProductSearch.aspx?MatrixKey=000001`;
 const USERNAME = 'CN44';
 const PASSWORD = 'VCPtec13';
 
-
 const ERROR_EXIT_CODE = 1;
 const SUCCESS_EXIT_CODE = 0;
-const RESOURCE_TIMEOUT = 20000; // 20 seconds
+const RESOURCE_TIMEOUT = 20000; /* 20 seconds */
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0';
+
+const LOGIN_FORM_USERNAME_SELECTOR = 'input[name="UserName"]';
+const LOGIN_FORM_PASSWORD_SELECTOR = 'input[name="txtPassword"]';
+const LOGIN_FORM_SUBMIT_SELECTOR = '[name="LoginButton"]';
+
+const LOGIN_WAIT_TIME = 10000; /* 10 seconds */
+const CHANGE_RESULTS_PER_PAGE_WAIT_TIME = 10000; /* 10 seconds */
+const RESULTS_PER_PAGE = 50;
+
+/* END CONSTANTS */
+
+
+
+
+
+
+/* PHANTOMJS CONFIGURATION */
 
 const webPage = require('webpage');
 const page = webPage.create();
+
 page.settings.userAgent = USER_AGENT;
 page.settings.resourceTimeout = RESOURCE_TIMEOUT;
+
 page.onResourceTimeout = (e) => {
   error(`${e.errorString} Code: ${e.errorCode}, Url: ${e.url}`);
   exit(ERROR_EXIT_CODE);
 };
+
 page.onError = (msg, trace) => {
   let msgStack = [msg];
   if (trace && trace.length) {
@@ -41,6 +64,7 @@ page.onError = (msg, trace) => {
   error(msgStack.join('\n'));
   exit(ERROR_EXIT_CODE);
 };
+
 phantom.onError = (msg, trace) => {
   let msgStack = [msg];
   if (trace && trace.length) {
@@ -53,6 +77,14 @@ phantom.onError = (msg, trace) => {
   exit(ERROR_EXIT_CODE);
 };
 
+/* END PHANTOMJS CONFIGURATION */
+
+
+
+
+
+
+/* UTILITY FUNCTIONS */
 
 function exitOnFailedStatus(status, page) {
   if (status === 'success') {
@@ -84,35 +116,27 @@ function exit(exitCode) {
   phantom.exit(exitCode);
 }
 
-function fillLoginForm(username, password) {
-  document.querySelector('input[name="UserName"]').setAttribute('value', username);
-  document.querySelector('input[name="txtPassword"]').setAttribute('value', password);
-  document.querySelector('[name="LoginButton"]').click();
+/* END UTILITY FUNCTIONS */
+
+
+
+
+
+
+/* BROWSER EVALUATED FUNCTIONS */
+
+function fillLoginForm(usernameSelector, passwordSelector, submitSelector, username, password) {
+  document.querySelector(usernameSelector).setAttribute('value', username);
+  document.querySelector(passwordSelector).setAttribute('value', password);
+  document.querySelector(submitSelector).click();
 }
 
-function handleLoginPage(status) {
-  exitOnFailedStatus(status, page);
-
-  // Fill out login form with credentials and click submit
-  info('Attempting to log in.');
-  page.evaluate(fillLoginForm, USERNAME, PASSWORD);
-
-  // Wait and check for successfull login
-  window.setTimeout(function() {
-    if(page.url === INGRAM_LOGIN_URL) {
-      error('Failed to log in.');
-      exit(ERROR_EXIT_CODE);
-    }
-    else {
-      info(`Successfully logged in. Current url is: ${page.url}`);
-      page.open(COMPUTADORAS, handleProductCategoryPage);
-    }
-  }, 10000);
+function changeResultsPerPage(resultsPerPage) {
+  document.querySelector('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').value = resultsPerPage;
+  $('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').trigger('change');  
 }
 
-function scrapeProductPaginatedPage() {
-  var BASE_URL = 'https://www.imstores.com/Ingrammicromx';
-
+function scrapeProductPaginatedPage(baseUrl) {
   var rows = document.querySelectorAll('.Row');
   var numrows = rows.length;
 
@@ -128,7 +152,7 @@ function scrapeProductPaginatedPage() {
 
   for(i = 0; i < numrows; ++i) {
     var row = rows[i];
-    path = BASE_URL + '/' + row.children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
+    path = baseUrl + '/' + row.children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
 
     match = inventoryRegex.exec(row.children[2].innerText.trim());
     inventoryStore = match ? match[1] : 'NULL';
@@ -159,14 +183,23 @@ function scrapeProductPaginatedPage() {
   };
 }
 
+/* END BROWSER EVALUATED FUNCTIONS */
+
+
+
+
+
+
+/* APPLICATION LOGIC FUNCTIONS */
+
 function scrapeProductCategoryPage() {
   let products = [];
  
   while(true){
-    const retVal = page.evaluate(scrapeProductPaginatedPage);
+    const retVal = page.evaluate(scrapeProductPaginatedPage, BASE_URL);
     if (retVal.status === 'error') {
       error(retVal.message);
-      logoff(page, 1);
+      logoff(page, ERROR_EXIT_CODE);
     }
     for (let i = 0; i < retVal.products.length; ++i) {
       products.push(retVal.products[i]);
@@ -182,22 +215,44 @@ function scrapeProductCategoryPage() {
     log(JSON.stringify(product), 'DATA');
   }
 
-  logoff(page, 0);
-}
-
-function changeResultsPerPage(resultsPerPage) {
-  document.querySelector('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').value = resultsPerPage;
-  $('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').trigger('change');  
+  logoff(page, SUCCESS_EXIT_CODE);
 }
 
 function handleProductCategoryPage(status) {
   exitOnFailedStatus(status, page);
 
-  // Change the number of results per page to minimize pagination
-  page.evaluate(changeResultsPerPage, 50);
+  /* Change the number of results per page to minimize pagination */
+  page.evaluate(changeResultsPerPage, RESULTS_PER_PAGE);
 
-  // Wait wait for successfull refresh and proceed to scrape the whole category
-  window.setTimeout(scrapeProductCategoryPage, 10000);
+  /* Wait wait for successfull refresh and proceed to scrape the whole category */
+  window.setTimeout(scrapeProductCategoryPage, CHANGE_RESULTS_PER_PAGE_WAIT_TIME);
 }
+
+function handleLoginPage(status) {
+  exitOnFailedStatus(status, page);
+
+  /* Fill out login form with credentials and click submit */
+  info('Attempting to log in.');
+  page.evaluate(fillLoginForm, LOGIN_FORM_USERNAME_SELECTOR, LOGIN_FORM_PASSWORD_SELECTOR, LOGIN_FORM_SUBMIT_SELECTOR, USERNAME, PASSWORD);
+
+  /* Wait and check for successfull login */
+  window.setTimeout(function() {
+    if(page.url === INGRAM_LOGIN_URL) {
+      error('Failed to log in.');
+      exit(ERROR_EXIT_CODE);
+    }
+    else {
+      info(`Successfully logged in. Current url is: ${page.url}`);
+      page.open(COMPUTADORAS, handleProductCategoryPage);
+    }
+  }, LOGIN_WAIT_TIME);
+}
+
+/* END APPLICATION LOGIC FUNCTIONS */
+
+
+
+
+
 
 page.open(INGRAM_LOGIN_URL, handleLoginPage);
