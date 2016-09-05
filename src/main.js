@@ -154,17 +154,17 @@ function scrapeProductPaginatedPage() {
 }
 
 function scrapeProductCategoryPage() {
-  var retVal = page.evaluate(scrapeProductPaginatedPage);
+  const retVal = page.evaluate(scrapeProductPaginatedPage);
 
   if (retVal.status === "error") {
     error(retVal.message);
     logoff(page, 1);
   }
 
-  var products = retVal.products;
-  var i, product;
+  let products = retVal.products;
+  let i, product;
 
-  debug("Retrieved data for " + products.length + " products. ");
+  debug(`Retrieved data for ${products.length} products.`);
 
   for (i = 0; i < products.length; ++i) {
     product = products[i];
