@@ -150,38 +150,45 @@ function scrapeProductPaginatedPage() {
   return {
     "status": "success",
     "products": products
-  }
+  };
 }
 
 function scrapeProductCategoryPage() {
-  const retVal = page.evaluate(scrapeProductPaginatedPage);
+  let products = [];
+ 
+  while(true){
+    const retVal = page.evaluate(scrapeProductPaginatedPage);
+    if (retVal.status === "error") {
+      error(retVal.message);
+      logoff(page, 1);
+    }
+    for (let i = 0; i < retVal.products.length; ++i) {
+      products.push(retVal.products[i]);
+    }
 
-  if (retVal.status === "error") {
-    error(retVal.message);
-    logoff(page, 1);
+    break;
   }
-
-  let products = retVal.products;
-  let i, product;
 
   debug(`Retrieved data for ${products.length} products.`);
 
-  for (i = 0; i < products.length; ++i) {
-    product = products[i];
+  for (let i = 0; i < products.length; ++i) {
+    let product = products[i];
     log(JSON.stringify(product), "DATA");
   }
 
   logoff(page, 0);
 }
 
+function changeResultsPerPage(resultsPerPage) {
+  $('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').val(resultsPerPage);
+  $('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').trigger('change');  
+}
+
 function handleProductCategoryPage(status) {
   exitOnFailedStatus(status, page);
 
   // Change the number of results per page to minimize pagination
-  page.evaluate(function() {
-    $('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').val('50');
-    $('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').trigger('change');
-  });
+  page.evaluate(changeResultsPerPage, 50);
 
   // Wait wait for successfull refresh and proceed to scrape the whole category
   window.setTimeout(scrapeProductCategoryPage, 10000);
