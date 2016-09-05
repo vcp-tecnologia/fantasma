@@ -7,22 +7,28 @@ import {
   error,
 } from './lib/logging';
 
-const BASE_URL = "https://www.imstores.com/Ingrammicromx";
+const BASE_URL = 'https://www.imstores.com/Ingrammicromx';
 const INGRAM_LOGIN_URL = `${BASE_URL}/login/login.aspx`;
 const LOGGED_IN_URL = `${BASE_URL}/default.aspx`;
 const LOGOUT_URL = `${BASE_URL}/login/logoff.aspx`;
 const COMPUTADORAS = `${BASE_URL}/ProductSearch.aspx?MatrixKey=000001`;
 
-const USERNAME = "CN44";
-const PASSWORD = "VCPtec13";
+const USERNAME = 'CN44';
+const PASSWORD = 'VCPtec13';
+
+
+const ERROR_EXIT_CODE = 1;
+const SUCCESS_EXIT_CODE = 0;
+const RESOURCE_TIMEOUT = 20000; // 20 seconds
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0';
 
 const webPage = require('webpage');
 const page = webPage.create();
-page.settings.userAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0';
-page.settings.resourceTimeout = 20000; // 20 seconds
+page.settings.userAgent = USER_AGENT;
+page.settings.resourceTimeout = RESOURCE_TIMEOUT;
 page.onResourceTimeout = (e) => {
-  error(e.errorString + " Code: " + e.errorCode + ", Url: " + e.url);
-  phantom.exit(1);
+  error(`${e.errorString} Code: ${e.errorCode}, Url: ${e.url}`);
+  exit(ERROR_EXIT_CODE);
 };
 page.onError = (msg, trace) => {
   let msgStack = [msg];
@@ -33,6 +39,7 @@ page.onError = (msg, trace) => {
     });
   }
   error(msgStack.join('\n'));
+  exit(ERROR_EXIT_CODE);
 };
 phantom.onError = (msg, trace) => {
   let msgStack = [msg];
@@ -43,70 +50,68 @@ phantom.onError = (msg, trace) => {
     });
   }
   error(msgStack.join('\n'));
-  phantom.exit(1);
+  exit(ERROR_EXIT_CODE);
 };
 
 
 function exitOnFailedStatus(status, page) {
-  if (status === "success") {
-    info("Successfully opened page: " + page.url);
+  if (status === 'success') {
+    info(`Successfully opened page: ${page.url}`);
     return;
   }
   else{
-    error("Failed to load page: " + page.url);
-    logoff(page, 1);
+    error(`Failed to load page: ${page.url}`);
+    logoff(page, ERROR_EXIT_CODE);
   }
 }
 
 function logoff(page, exitCode) {
-  info("Attempting to log off.");
+  info('Attempting to log off.');
   page.open(LOGOUT_URL, function(status) {
-    if (status === "success") {
-      info("Successfully logged off. Url is: " + page.url);
-      info("Exiting with code: " + exitCode);
-      phantom.exit(exitCode);
+    if (status === 'success') {
+      info(`Successfully logged off. Url is: ${page.url}`);
+      exit(exitCode);
     }
     else {
-      error("Failed to log off. Url is: " + page.url);
-      info("Exiting with code: " + 1);
-      phantom.exit(1);
+      error(`Failed to log off. Url is: ${page.url}`);
+      exit(ERROR_EXIT_CODE);
     }
   });
+}
+
+function exit(exitCode) {
+  info(`Exiting with code: ${exitCode}`);
+  phantom.exit(exitCode);
+}
+
+function fillLoginForm(username, password) {
+  document.querySelector('input[name="UserName"]').setAttribute('value', username);
+  document.querySelector('input[name="txtPassword"]').setAttribute('value', password);
+  document.querySelector('[name="LoginButton"]').click();
 }
 
 function handleLoginPage(status) {
   exitOnFailedStatus(status, page);
 
   // Fill out login form with credentials and click submit
-  info("Attempting to log in.");
-  page.evaluate(function() {
-      document.querySelector('input[name="UserName"]').setAttribute('value', "CN44");
-      document.querySelector('input[name="txtPassword"]').setAttribute('value', "VCPtec13");
-      document.querySelector('[name="LoginButton"]').click();
-  });
+  info('Attempting to log in.');
+  page.evaluate(fillLoginForm, USERNAME, PASSWORD);
 
   // Wait and check for successfull login
   window.setTimeout(function() {
     if(page.url === INGRAM_LOGIN_URL) {
-      error("Failed to log in.");
-      info("Exiting with code: " + 1);
-      phantom.exit(1);
+      error('Failed to log in.');
+      exit(ERROR_EXIT_CODE);
     }
     else {
-      info("Successfully logged in. Current url is: " + page.url);
+      info(`Successfully logged in. Current url is: ${page.url}`);
       page.open(COMPUTADORAS, handleProductCategoryPage);
     }
   }, 10000);
 }
 
 function scrapeProductPaginatedPage() {
-  // if (!window.$){
-  //   return {
-  //     "status": "error"
-  //     "message": "JQuery not available."
-  //   }
-  // }
-  var BASE_URL = "https://www.imstores.com/Ingrammicromx";
+  var BASE_URL = 'https://www.imstores.com/Ingrammicromx';
 
   var rows = $('.Row');
   var numrows = rows.length;
@@ -122,20 +127,20 @@ function scrapeProductPaginatedPage() {
   var products = [];
 
   for(i = 0; i < numrows; ++i) {
-    path = BASE_URL + "/" + $('.Row')[i].children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
+    path = BASE_URL + '/' + $('.Row')[i].children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
 
     match = inventoryRegex.exec($('.Row')[i].children[2].innerText.trim());
-    inventoryStore = match ? match[1] : "NULL";
-    inventoryTotal = match ? match[2] : "NULL";
+    inventoryStore = match ? match[1] : 'NULL';
+    inventoryTotal = match ? match[2] : 'NULL';
 
     match = partNumRegex.exec($('.Row')[i].children[0].children[0].children[0].children[0].children[1].innerText.trim());
-    partnum = match ? match[1] : "NULL";
+    partnum = match ? match[1] : 'NULL';
 
     match = skuRegex.exec($('.Row')[i].children[0].children[0].children[0].children[0].children[2].innerText.trim());
-    sku = match ? match[1] : "NULL";
+    sku = match ? match[1] : 'NULL';
 
     match = priceRegex.exec($('.Row')[i].children[3].innerText.trim());
-    price = match ? match[1] : "NULL";
+    price = match ? match[1] : 'NULL';
 
     products.push({
       path: path,
@@ -148,8 +153,8 @@ function scrapeProductPaginatedPage() {
   }
 
   return {
-    "status": "success",
-    "products": products
+    'status': 'success',
+    'products': products
   };
 }
 
@@ -158,7 +163,7 @@ function scrapeProductCategoryPage() {
  
   while(true){
     const retVal = page.evaluate(scrapeProductPaginatedPage);
-    if (retVal.status === "error") {
+    if (retVal.status === 'error') {
       error(retVal.message);
       logoff(page, 1);
     }
@@ -173,7 +178,7 @@ function scrapeProductCategoryPage() {
 
   for (let i = 0; i < products.length; ++i) {
     let product = products[i];
-    log(JSON.stringify(product), "DATA");
+    log(JSON.stringify(product), 'DATA');
   }
 
   logoff(page, 0);
