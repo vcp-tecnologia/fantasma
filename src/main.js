@@ -28,6 +28,8 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 
 const LOGIN_FORM_USERNAME_SELECTOR = 'input[name="UserName"]';
 const LOGIN_FORM_PASSWORD_SELECTOR = 'input[name="txtPassword"]';
 const LOGIN_FORM_SUBMIT_SELECTOR = '[name="LoginButton"]';
+const RESULTS_PER_PAGE_SELECTOR = '[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]';
+const NEXT_PAGE_SELECTOR = '[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]';
 
 const LOGIN_WAIT_TIME = 10000; /* 10 seconds */
 const CHANGE_RESULTS_PER_PAGE_WAIT_TIME = 10000; /* 10 seconds */
@@ -125,25 +127,25 @@ function exit(exitCode) {
 
 /* BROWSER EVALUATED FUNCTIONS */
 
-function fillLoginForm(usernameSelector, passwordSelector, submitSelector, username, password) {
-  document.querySelector(usernameSelector).setAttribute('value', username);
-  document.querySelector(passwordSelector).setAttribute('value', password);
-  document.querySelector(submitSelector).click();
+function fillLoginForm(options) {
+  document.querySelector(options.usernameSelector).setAttribute('value', options.username);
+  document.querySelector(options.passwordSelector).setAttribute('value', options.password);
+  document.querySelector(options.submitSelector).click();
 }
 
-function changeResultsPerPage(resultsPerPage) {
-  document.querySelector('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').value = resultsPerPage;
-  $('[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]').trigger('change');  
+function changeResultsPerPage(options) {
+  document.querySelector(options.resultsPerPageSelector).value = options.resultsPerPage;
+  $(options.nextPageSelector).trigger('change');  
 }
 
-function scrapeProductPaginatedPage(baseUrl) {
+function scrapeProductPaginatedPage(options) {
   var rows = document.querySelectorAll('.Row');
   var numrows = rows.length;
 
   var inventoryRegex = /^(\d)+ +\[(\d)+\]$/;
   var partNumRegex = /^Part#: +(.*)$/;
   var skuRegex = /^SKU: +(.*)$/;
-  var priceRegex = /^\$ +([0-9\.,]+)$/
+  var priceRegex = /^\$ +([0-9\.,]+)$/;
 
   var path, inventoryStore, inventoryTotal, sku, partnum, price;
 
@@ -152,7 +154,7 @@ function scrapeProductPaginatedPage(baseUrl) {
 
   for(i = 0; i < numrows; ++i) {
     var row = rows[i];
-    path = baseUrl + '/' + row.children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
+    path = options.baseUrl + '/' + row.children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
 
     match = inventoryRegex.exec(row.children[2].innerText.trim());
     inventoryStore = match ? match[1] : 'NULL';
@@ -196,7 +198,10 @@ function scrapeProductCategoryPage() {
   let products = [];
  
   while(true){
-    const retVal = page.evaluate(scrapeProductPaginatedPage, BASE_URL);
+    const options = {
+      baseUrl: BASE_URL
+    };
+    const retVal = page.evaluate(scrapeProductPaginatedPage, options);
     if (retVal.status === 'error') {
       error(retVal.message);
       logoff(page, ERROR_EXIT_CODE);
@@ -222,7 +227,12 @@ function handleProductCategoryPage(status) {
   exitOnFailedStatus(status, page);
 
   /* Change the number of results per page to minimize pagination */
-  page.evaluate(changeResultsPerPage, RESULTS_PER_PAGE);
+  const options = { 
+    resultsPerPage: RESULTS_PER_PAGE,
+    resultsPerPageSelector: RESULTS_PER_PAGE_SELECTOR,
+    nextPageSelector: NEXT_PAGE_SELECTOR
+  };
+  page.evaluate(changeResultsPerPage, options);
 
   /* Wait wait for successfull refresh and proceed to scrape the whole category */
   window.setTimeout(scrapeProductCategoryPage, CHANGE_RESULTS_PER_PAGE_WAIT_TIME);
@@ -233,7 +243,14 @@ function handleLoginPage(status) {
 
   /* Fill out login form with credentials and click submit */
   info('Attempting to log in.');
-  page.evaluate(fillLoginForm, LOGIN_FORM_USERNAME_SELECTOR, LOGIN_FORM_PASSWORD_SELECTOR, LOGIN_FORM_SUBMIT_SELECTOR, USERNAME, PASSWORD);
+  const options = {
+    usernameSelector: LOGIN_FORM_USERNAME_SELECTOR,
+    passwordSelector: LOGIN_FORM_PASSWORD_SELECTOR, 
+    submitSelector: LOGIN_FORM_SUBMIT_SELECTOR, 
+    username: USERNAME,
+    password: PASSWORD
+  };
+  page.evaluate(fillLoginForm, options);
 
   /* Wait and check for successfull login */
   window.setTimeout(function() {
