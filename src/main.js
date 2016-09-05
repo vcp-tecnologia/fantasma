@@ -20,23 +20,20 @@ const INGRAM_LOGIN_URL = `${BASE_URL}/login/login.aspx`;
 const LOGGED_IN_URL = `${BASE_URL}/default.aspx`;
 const LOGOUT_URL = `${BASE_URL}/login/logoff.aspx`;
 const COMPUTADORAS = `${BASE_URL}/ProductSearch.aspx?MatrixKey=000001`;
-
-const USERNAME = 'CN44';
-const PASSWORD = 'VCPtec13';
-
-const ERROR_EXIT_CODE = 1;
-const SUCCESS_EXIT_CODE = 0;
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0';
-
+const GAMES = `${BASE_URL}/ProductSearch.aspx?MatrixKey=A1017C10002`;
 const LOGIN_FORM_USERNAME_SELECTOR = 'input[name="UserName"]';
 const LOGIN_FORM_PASSWORD_SELECTOR = 'input[name="txtPassword"]';
 const LOGIN_FORM_SUBMIT_SELECTOR = '[name="LoginButton"]';
 const RESULTS_PER_PAGE_SELECTOR = '[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]';
 const NEXT_PAGE_SELECTOR = '#ctl00_ContentPlaceHolder1_btnNext';
 const CURRENT_PAGE_SELECTOR = '#ctl00_ContentPlaceHolder1_ddlPageNumber';
+const USERNAME = 'CN44';
+const PASSWORD = 'VCPtec13';
 
+const ERROR_EXIT_CODE = 1;
+const SUCCESS_EXIT_CODE = 0;
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0';
 const NULL_VALUE = 'NULL';
-
 const RESOURCE_TIMEOUT = 20000; /* 20 seconds */
 const LOGIN_WAIT_TIME = 10000; /* 10 seconds */
 const CHANGE_RESULTS_PER_PAGE_WAIT_TIME = 10000; /* 10 seconds */
