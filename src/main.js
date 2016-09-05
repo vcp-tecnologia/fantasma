@@ -226,22 +226,20 @@ function paginateAndScrapeProductCategoryPage() {
   let pagenum;
 
   const intervalId = window.setInterval(function() {
-    const optionsCurrentPage = {
+    pagenum = page.evaluate(getCurrentPage, {
       currentPageSelector: CURRENT_PAGE_SELECTOR
-    }
-    pagenum = page.evaluate(getCurrentPage, optionsCurrentPage);
+    });
 
-    let optionsAdvancePage = {
+    page.evaluate(advanceResultsPage, {
       nooop: pagenum === 1,
       nextPageSelector: NEXT_PAGE_SELECTOR
-    };
-    page.evaluate(advanceResultsPage, optionsAdvancePage);
+    });
 
-    const optionsScrapePaginatedPage = {
+    const retVal = page.evaluate(scrapeProductPaginatedPage, {
       baseUrl: BASE_URL,
       nullValue: NULL_VALUE
-    };
-    const retVal = page.evaluate(scrapeProductPaginatedPage, optionsScrapePaginatedPage);
+    });
+    
     if (retVal.status === 'error') {
       error(retVal.message);
       logoff(page, ERROR_EXIT_CODE);
@@ -267,11 +265,10 @@ function handleProductCategoryPage(status) {
   exitOnFailedStatus(status, page);
 
   /* Change the number of results per page to minimize pagination */
-  const options = { 
+  page.evaluate(changeResultsPerPage, { 
     resultsPerPage: RESULTS_PER_PAGE,
     resultsPerPageSelector: RESULTS_PER_PAGE_SELECTOR
-  };
-  page.evaluate(changeResultsPerPage, options);
+  });
 
   /* Wait for successfull refresh and proceed to scrape the whole paginated subcategory */
   window.setTimeout(paginateAndScrapeProductCategoryPage, CHANGE_RESULTS_PER_PAGE_WAIT_TIME);
@@ -282,14 +279,13 @@ function handleLoginPage(status) {
 
   /* Fill out login form with credentials and click submit */
   info('Attempting to log in.');
-  const options = {
+  page.evaluate(fillLoginForm, {
     usernameSelector: LOGIN_FORM_USERNAME_SELECTOR,
     passwordSelector: LOGIN_FORM_PASSWORD_SELECTOR, 
     submitSelector: LOGIN_FORM_SUBMIT_SELECTOR, 
     username: USERNAME,
     password: PASSWORD
-  };
-  page.evaluate(fillLoginForm, options);
+  });
 
   /* Wait and check for successfull login */
   window.setTimeout(function() {
