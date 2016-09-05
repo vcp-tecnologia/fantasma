@@ -31,6 +31,8 @@ const LOGIN_FORM_SUBMIT_SELECTOR = '[name="LoginButton"]';
 const RESULTS_PER_PAGE_SELECTOR = '[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]';
 const NEXT_PAGE_SELECTOR = '[name="ctl00$ContentPlaceHolder1$ddlResultsPerPage"]';
 
+const NULL_VALUE = 'NULL';
+
 const LOGIN_WAIT_TIME = 10000; /* 10 seconds */
 const CHANGE_RESULTS_PER_PAGE_WAIT_TIME = 10000; /* 10 seconds */
 const RESULTS_PER_PAGE = 50;
@@ -60,7 +62,9 @@ page.onError = (msg, trace) => {
   if (trace && trace.length) {
     msgStack.push('TRACE:');
     trace.forEach(function(t) {
-      msgStack.push(' -> ' + t.file + ': ' + t.line + (t.function ? ' (in function "' + t.function +'")' : ''));
+      let fnct = t.function ? ` (in function "${t.function}")` : '';
+      let msg = ` -> ${t.file}: ${t.line}${fnct}`;
+      msgStack.push(msg);
     });
   }
   error(msgStack.join('\n'));
@@ -72,7 +76,9 @@ phantom.onError = (msg, trace) => {
   if (trace && trace.length) {
     msgStack.push('TRACE:');
     trace.forEach(function(t) {
-      msgStack.push(' -> ' + (t.file || t.sourceURL) + ': ' + t.line + (t.function ? ' (in function ' + t.function +')' : ''));
+      let fnct = t.function ? ` (in function "${t.function}")` : '';
+      let msg = ` -> ${t.file || t.sourceURL}: ${t.line}${fnct}`;
+      msgStack.push(msg);
     });
   }
   error(msgStack.join('\n'));
@@ -157,17 +163,17 @@ function scrapeProductPaginatedPage(options) {
     path = options.baseUrl + '/' + row.children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
 
     match = inventoryRegex.exec(row.children[2].innerText.trim());
-    inventoryStore = match ? match[1] : 'NULL';
-    inventoryTotal = match ? match[2] : 'NULL';
+    inventoryStore = match ? match[1] : options.nullValue;
+    inventoryTotal = match ? match[2] : options.nullValue;
 
     match = partNumRegex.exec(row.children[0].children[0].children[0].children[0].children[1].innerText.trim());
-    partnum = match ? match[1] : 'NULL';
+    partnum = match ? match[1] : options.nullValue;
 
     match = skuRegex.exec(row.children[0].children[0].children[0].children[0].children[2].innerText.trim());
-    sku = match ? match[1] : 'NULL';
+    sku = match ? match[1] : options.nullValue;
 
     match = priceRegex.exec(row.children[3].innerText.trim());
-    price = match ? match[1] : 'NULL';
+    price = match ? match[1] : options.nullValue;
 
     products.push({
       path: path,
@@ -199,7 +205,8 @@ function scrapeProductCategoryPage() {
  
   while(true){
     const options = {
-      baseUrl: BASE_URL
+      baseUrl: BASE_URL,
+      nullValue: NULL_VALUE
     };
     const retVal = page.evaluate(scrapeProductPaginatedPage, options);
     if (retVal.status === 'error') {
