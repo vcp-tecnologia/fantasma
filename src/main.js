@@ -19,8 +19,6 @@ const BASE_URL = 'https://www.imstores.com/Ingrammicromx';
 const INGRAM_LOGIN_URL = `${BASE_URL}/login/login.aspx`;
 const LOGGED_IN_URL = `${BASE_URL}/default.aspx`;
 const LOGOUT_URL = `${BASE_URL}/login/logoff.aspx`;
-const COMPUTADORAS = `${BASE_URL}/ProductSearch.aspx?MatrixKey=000001`;
-const GAMES = `${BASE_URL}/ProductSearch.aspx?MatrixKey=A1017C10002`;
 const LOGIN_FORM_USERNAME_SELECTOR = 'input[name="UserName"]';
 const LOGIN_FORM_PASSWORD_SELECTOR = 'input[name="txtPassword"]';
 const LOGIN_FORM_SUBMIT_SELECTOR = '[name="LoginButton"]';
@@ -44,6 +42,17 @@ const RESULTS_PER_PAGE = 50;
 /* END CONSTANTS */
 
 
+
+
+const system = require('system');
+const args = system.args;
+
+if (args.length !== 3) {
+  error('Usage: phantomjs scraper.js [category] [url]');
+  exit(ERROR_EXIT_CODE);
+}
+const CATEGORY_NAME = args[1];
+const CATEGORY_URL = args[2];
 
 
 
@@ -301,7 +310,7 @@ function handleLoginPage(status) {
     }
     else {
       info(`Successfully logged in. Current url is: ${page.url}`);
-      page.open(COMPUTADORAS, handleProductCategoryPage);
+      page.open(CATEGORY_URL, handleProductCategoryPage);
     }
   }, LOGIN_WAIT_TIME);
 }
@@ -312,5 +321,5 @@ function handleLoginPage(status) {
 
 
 
-
+info(`Starting scraping of category: ${CATEGORY_NAME}, and url: ${CATEGORY_URL}`);
 page.open(INGRAM_LOGIN_URL, handleLoginPage);
