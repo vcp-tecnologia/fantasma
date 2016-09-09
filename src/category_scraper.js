@@ -1,6 +1,5 @@
 /* @flow */
 
-// TODO remove all jquery dependencies inside evaluate code
 // modularize code, remove page global, pass it around functions
 
 
@@ -154,50 +153,19 @@ function fillLoginForm(options) {
 
 function changeResultsPerPage(options) {
   document.querySelector(options.resultsPerPageSelector).value = options.resultsPerPage;
-  $(options.resultsPerPageSelector).trigger('change');  
+  document.querySelector(options.resultsPerPageSelector).onchange();
 }
 
 function scrapeProductPaginatedPage(options) {
   var rows = document.querySelectorAll('.Row');
   var numrows = rows.length;
 
-  var inventoryRegex = /^(\d)+ +\[(\d)+\]$/;
-  var partNumberRegex = /^Part#: +(.*)$/;
-  var skuRegex = /^SKU: +(.*)$/;
-  var priceRegex = /^\$ +([0-9\.,]+)( +\$ +([0-9\.,]+))?$/;
-
-  var productUrl, inventoryStore, inventoryTotal, sku, partNumber, price, discountedPrice;
-
-  var i, match;
+  var productUrl, i;
   var products = [];
 
   for(i = 0; i < numrows; ++i) {
-    var row = rows[i];
-    productUrl = options.baseUrl + '/' + row.children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
-
-    match = inventoryRegex.exec(row.children[2].innerText.trim());
-    inventoryStore = match ? match[1] : options.nullValue;
-    inventoryTotal = match ? match[2] : options.nullValue;
-
-    match = partNumberRegex.exec(row.children[0].children[0].children[0].children[0].children[1].innerText.trim());
-    partNumber = match ? match[1] : options.nullValue;
-
-    match = skuRegex.exec(row.children[0].children[0].children[0].children[0].children[2].innerText.trim());
-    sku = match ? match[1] : options.nullValue;
-
-    match = priceRegex.exec(row.children[3].innerText.trim().replace('\n', ' '));
-    price = match ? (match[1] || options.nullValue) : options.nullValue;
-    discountedPrice = match ? (match[3] || options.nullValue) : options.nullValue;
-
-    products.push({
-      product_url: productUrl,
-      inventory_store: inventoryStore,
-      inventory_total: inventoryTotal,
-      part_number: partNumber,
-      sku: sku,
-      price: price,
-      discounted_price: discountedPrice
-    });
+    productUrl = options.baseUrl + '/' + rows[i].children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
+    products.push(productUrl);
   }
 
   return {
@@ -238,42 +206,41 @@ function paginateAndScrapeCategoryPage() {
       currentPageSelector: CURRENT_PAGE_SELECTOR
     });
 
-    if (newPageNumber !== pageNumber) {
-      pageNumber = newPageNumber;
-      page.evaluate(advanceResultsPage, {
-        nooop: pageNumber === 1,
-        nextPageSelector: NEXT_PAGE_SELECTOR
-      });
+    window.setTimeout(function() {
+      log('Page number is: ' + newPageNumber, 'DEBUG');
 
-      const retVal = page.evaluate(scrapeProductPaginatedPage, {
-        baseUrl: BASE_URL,
-        nullValue: NULL_VALUE
-      });
-      
-      if (retVal.status === 'error') {
-        error(retVal.message);
-        logoff(page, ERROR_EXIT_CODE);
+      if (newPageNumber !== pageNumber) {
+        pageNumber = newPageNumber;
+        page.evaluate(advanceResultsPage, {
+          nooop: pageNumber === 1,
+          nextPageSelector: NEXT_PAGE_SELECTOR
+        });
+
+        const retVal = page.evaluate(scrapeProductPaginatedPage, {
+          baseUrl: BASE_URL,
+          nullValue: NULL_VALUE
+        });
+        
+        if (retVal.status === 'error') {
+          error(retVal.message);
+          logoff(page, ERROR_EXIT_CODE);
+        }
+
+        let products = retVal.products;
+
+        debug(`Retrieved paginated data for ${products.length} products. Page ${pageNumber}`);
+
+        for (let i = 0; i < products.length; ++i) {
+          let productUrl = products[i];
+          log(productUrl  , 'DATA');
+        }
       }
-
-      let products = retVal.products;
-
-      debug(`Retrieved paginated data for ${products.length} products. Page ${pageNumber}`);
-
-      for (let i = 0; i < products.length; ++i) {
-        let product = products[i];
-        log(JSON.stringify(product), 'DATA');
-      }
-    }
-    else {
-      clearInterval(intervalId);
-      logoff(page, SUCCESS_EXIT_CODE);
-    }
+      else {
+        clearInterval(intervalId);
+        logoff(page, SUCCESS_EXIT_CODE);
+      }      
+    }, 2000);
   }, PAGINTATION_WAIT_TIME);
-
-  window.setTimeout(function() {
-    clearInterval(intervalId);
-    logoff(page, SUCCESS_EXIT_CODE);
-  }, SCRAPING_TOTAL_TIMEOUT);
 }
 
 function handleProductCategoryPage(status) {

@@ -36,7 +36,7 @@ const NULL_VALUE = 'NULL';
 const RESOURCE_TIMEOUT = 20000; /* 20 seconds */
 const LOGIN_WAIT_TIME = 10000; /* 5 seconds */
 const CHANGE_RESULTS_PER_PAGE_WAIT_TIME = 10000; /* 5 seconds */
-const PAGINTATION_WAIT_TIME = 10000; /* 5 seconds */
+const PAGINTATION_WAIT_TIME = 20000; /* 5 seconds */
 const SCRAPING_TOTAL_TIMEOUT = 180000;
 const RESULTS_PER_PAGE = 50;
 
@@ -164,14 +164,7 @@ function scrapeProductPaginatedPage(options) {
   var rows = document.querySelectorAll('.Row');
   var numrows = rows.length;
 
-  var inventoryRegex = /^(\d)+ +\[(\d)+\]$/;
-  var partNumberRegex = /^Part#: +(.*)$/;
-  var skuRegex = /^SKU: +(.*)$/;
-  var priceRegex = /^\$ +([0-9\.,]+)( +\$ +([0-9\.,]+))?$/;
-
-  var productUrl, inventoryStore, inventoryTotal, sku, partNumber, price, discountedPrice;
-
-  var i, match;
+  var productUrl, i;
   var products = [];
 
   for(i = 0; i < numrows; ++i) {
@@ -384,7 +377,10 @@ function paginateAndScrapeCategoryPage() {
       currentPageSelector: CURRENT_PAGE_SELECTOR
     });
 
+
     window.setTimeout(function() {
+      log('Page number is: ' + newPageNumber, 'DEBUG');
+
       if (newPageNumber !== pageNumber) {
         pageNumber = newPageNumber;
         page.evaluate(advanceResultsPage, {
