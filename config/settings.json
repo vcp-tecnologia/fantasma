@@ -3,18 +3,29 @@
   "LOGIN_URL": "https://www.imstores.com/Ingrammicromx/login/login.aspx",
   "LOGGED_IN_URL": "https://www.imstores.com/Ingrammicromx/default.aspx",
   "LOGOUT_URL": "https://www.imstores.com/Ingrammicromx/login/logoff.aspx",
+  
   "LOGIN_FORM_USERNAME_SELECTOR": "input[name='UserName']",
   "LOGIN_FORM_PASSWORD_SELECTOR": "input[name='txtPassword']",
   "LOGIN_FORM_SUBMIT_SELECTOR": "[name='LoginButton']",
   "RESULTS_PER_PAGE_SELECTOR": "[name='ctl00$ContentPlaceHolder1$ddlResultsPerPage']",
   "NEXT_PAGE_SELECTOR": "#ctl00_ContentPlaceHolder1_btnNext",
   "CURRENT_PAGE_SELECTOR": "#ctl00_ContentPlaceHolder1_ddlPageNumber",
+  "SPECS_TAB_SELECTOR": "ctl00_ContentPlaceHolder1_TabStrip1_1",
+  "SPECS_TAB_SELECTOR": "ctl00_ContentPlaceHolder1_TabStrip1_1",
+  
   "USERNAME": "CN44",
   "PASSWORD": "VCPtec13",
+  
   "USER_AGENT": "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0",
+  
   "RESOURCE_TIMEOUT": 20000,
   "LOGIN_WAIT_TIME": 10000,
   "CHANGE_RESULTS_PER_PAGE_WAIT_TIME": 10000,
   "PAGINATION_WAIT_TIME": 20000,
-  "RESULTS_PER_PAGE": 50
+  "SPECS_LOAD_WAIT_TIME": 2000,
+  
+  "RESULTS_PER_PAGE": 50,
+
+  "SUCCESS_EXIT_CODE": 0,
+  "ERROR_EXIT_CODE": 1
 }
