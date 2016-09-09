@@ -1,6 +1,5 @@
 /* @flow */
 
-// TODO remove all jquery dependencies inside evaluate code
 // modularize code, remove page global, pass it around functions
 
 
@@ -10,7 +9,6 @@ import {
   info,
   error,
 } from './lib/logging';
-
 
 
 
@@ -44,21 +42,25 @@ const RESULTS_PER_PAGE = 50;
 
 
 
+/* CONFIGURATION */
 
+const fs = require('fs');
 const system = require('system');
 const args = system.args;
 
-if (args.length !== 3) {
-  error('Usage: phantomjs scraper.js [category] [url]');
+if (args.length !== 2) {
+  error('Usage: phantomjs product_scraper.js [url_file]');
   exit(ERROR_EXIT_CODE);
 }
-const CATEGORY_NAME = args[1];
-const CATEGORY_URL = args[2];
+const URL_FILE = args[1];
 
+if(!fs.exists(URL_FILE) || !fs.isFile(URL_FILE)) {
+  error(`File does not exist: ${URL_FILE}`);
+  exit(ERROR_EXIT_CODE);
+}
 
-
-
-/* PHANTOMJS CONFIGURATION */
+const content = fs.read(URL_FILE);
+const PRODUCT_URLS = content.split('\n');
 
 const webPage = require('webpage');
 const page = webPage.create();
@@ -101,7 +103,7 @@ phantom.onError = (msg, trace) => {
   exit(ERROR_EXIT_CODE);
 };
 
-/* END PHANTOMJS CONFIGURATION */
+/* END CONFIGURATION */
 
 
 
@@ -154,45 +156,6 @@ function fillLoginForm(options) {
   document.querySelector(options.passwordSelector).setAttribute('value', options.password);
   document.querySelector(options.submitSelector).click();
 }
-
-function changeResultsPerPage(options) {
-  document.querySelector(options.resultsPerPageSelector).value = options.resultsPerPage;
-  document.querySelector(options.resultsPerPageSelector).onchange();
-}
-
-function scrapeProductPaginatedPage(options) {
-  var rows = document.querySelectorAll('.Row');
-  var numrows = rows.length;
-
-  var productUrl, i;
-  var products = [];
-
-  for(i = 0; i < numrows; ++i) {
-    productUrl = options.baseUrl + '/' + rows[i].children[1].children[0].children[0].children[0].children[0].children[0].children[1].getAttribute('href');
-    products.push(productUrl);
-  }
-
-  return {
-    'status': 'success',
-    'products': products
-  };
-}
-
-function advanceResultsPage(options){
-  if(options.noop) {
-    return;
-  }
-  var nextPage = document.querySelector(options.nextPageSelector);
-  if (nextPage) {
-    nextPage.click();
-  }
-}
-
-function getCurrentPage(options){
-  var currentPage = document.querySelector(options.currentPageSelector).value;
-  return parseInt(currentPage);
-}
-
 
 function productData() {
 
@@ -368,65 +331,6 @@ function scrapeProducts(productUrls) {
   nextProduct();  
 }
 
-function paginateAndScrapeCategoryPage() { 
-  let pageNumber = null;
-  let productUrls = [];
-
-  const paginationIntervalId = window.setInterval(function() {
-    let newPageNumber = page.evaluate(getCurrentPage, {
-      currentPageSelector: CURRENT_PAGE_SELECTOR
-    });
-
-
-    window.setTimeout(function() {
-      log('Page number is: ' + newPageNumber, 'DEBUG');
-
-      if (newPageNumber !== pageNumber) {
-        pageNumber = newPageNumber;
-        page.evaluate(advanceResultsPage, {
-          nooop: pageNumber === 1,
-          nextPageSelector: NEXT_PAGE_SELECTOR
-        });
-
-        const retVal = page.evaluate(scrapeProductPaginatedPage, {
-          baseUrl: BASE_URL,
-          nullValue: NULL_VALUE
-        });
-        
-        if (retVal.status === 'error') {
-          error(retVal.message);
-          logoff(page, ERROR_EXIT_CODE);
-        }
-
-        debug(`Retrieved paginated data for ${retVal.products.length} products. Page ${pageNumber}`);
-
-        for (let i = 0; i < retVal.products.length; ++i) {
-          let productUrl = retVal.products[i];
-          log(productUrl  , 'DATA');
-          productUrls.push(productUrl);
-        }
-      }
-      else {
-        clearInterval(paginationIntervalId);
-        scrapeProducts(productUrls);
-      }
-    }, 2000);
-  }, PAGINTATION_WAIT_TIME);
-}
-
-function handleProductCategoryPage(status) {
-  exitOnFailedStatus(status, page);
-
-  /* Change the number of results per page to minimize pagination */
-  page.evaluate(changeResultsPerPage, { 
-    resultsPerPage: RESULTS_PER_PAGE,
-    resultsPerPageSelector: RESULTS_PER_PAGE_SELECTOR
-  });
-
-  /* Wait for successfull refresh and proceed to scrape the whole paginated subcategory */
-  window.setTimeout(paginateAndScrapeCategoryPage, CHANGE_RESULTS_PER_PAGE_WAIT_TIME);
-}
-
 function handleLoginPage(status) {
   exitOnFailedStatus(status, page);
 
@@ -448,7 +352,7 @@ function handleLoginPage(status) {
     }
     else {
       info(`Successfully logged in. Current url is: ${page.url}`);
-      page.open(CATEGORY_URL, handleProductCategoryPage);
+      scrapeProducts(PRODUCT_URLS);
     }
   }, LOGIN_WAIT_TIME);
 }
@@ -459,5 +363,8 @@ function handleLoginPage(status) {
 
 
 
-info(`Starting scraping of category: ${CATEGORY_NAME}, and url: ${CATEGORY_URL}`);
+info(`Starting product scraper for ${PRODUCT_URLS.length} product urls.`);
+for (let i = 0; i < PRODUCT_URLS.length; ++i) {
+  info(PRODUCT_URLS[i]);
+}
 page.open(INGRAM_LOGIN_URL, handleLoginPage);

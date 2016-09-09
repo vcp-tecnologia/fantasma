@@ -34,7 +34,7 @@ const NULL_VALUE = 'NULL';
 const RESOURCE_TIMEOUT = 20000; /* 20 seconds */
 const LOGIN_WAIT_TIME = 10000; /* 10 seconds */
 const CHANGE_RESULTS_PER_PAGE_WAIT_TIME = 10000; /* 10 seconds */
-const PAGINTATION_WAIT_TIME = 10000; /* 10 seconds */
+const PAGINTATION_WAIT_TIME = 20000; /* 10 seconds */
 const SCRAPING_TOTAL_TIMEOUT = 180000;
 const RESULTS_PER_PAGE = 50;
 
@@ -47,7 +47,7 @@ const system = require('system');
 const args = system.args;
 
 if (args.length !== 3) {
-  error('Usage: phantomjs scraper.js [category] [url]');
+  error('Usage: phantomjs category_scraper.js [category] [url]');
   exit(ERROR_EXIT_CODE);
 }
 const CATEGORY_NAME = args[1];
@@ -66,7 +66,9 @@ page.settings.resourceTimeout = RESOURCE_TIMEOUT;
 
 page.onResourceTimeout = (e) => {
   error(`${e.errorString} Code: ${e.errorCode}, Url: ${e.url}`);
-  exit(ERROR_EXIT_CODE);
+  if (e.url === INGRAM_LOGIN_URL || e.url === LOGGED_IN_URL || e.url === CATEGORY_URL){
+    exit(ERROR_EXIT_CODE);
+  }
 };
 
 page.onError = (msg, trace) => {
@@ -201,7 +203,7 @@ function getCurrentPage(options){
 function paginateAndScrapeCategoryPage() { 
   let pageNumber = null;
 
-  const intervalId = window.setInterval(function() {
+  const paginationIntervalId = window.setInterval(function() {
     let newPageNumber = page.evaluate(getCurrentPage, {
       currentPageSelector: CURRENT_PAGE_SELECTOR
     });
@@ -226,17 +228,15 @@ function paginateAndScrapeCategoryPage() {
           logoff(page, ERROR_EXIT_CODE);
         }
 
-        let products = retVal.products;
+        debug(`Retrieved paginated data for ${retVal.products.length} products. Page ${pageNumber}`);
 
-        debug(`Retrieved paginated data for ${products.length} products. Page ${pageNumber}`);
-
-        for (let i = 0; i < products.length; ++i) {
-          let productUrl = products[i];
-          log(productUrl  , 'DATA');
+        for (let i = 0; i < retVal.products.length; ++i) {
+          let productUrl = retVal.products[i];
+          log(productUrl, 'DATA');
         }
       }
       else {
-        clearInterval(intervalId);
+        clearInterval(paginationIntervalId);
         logoff(page, SUCCESS_EXIT_CODE);
       }      
     }, 2000);
