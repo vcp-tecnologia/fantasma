@@ -264,21 +264,21 @@ function productData() {
     var specs = specifications();
     
     return {
-      provider: "Ingram",
+      proveedor: "Ingram",
       url: window.location.href,
-      title: title,
-      image_url: imageUrl,
+      titulo: title,
+      foto_url: imageUrl,
       sku: sku,
-      part_number: partNumber,
+      numero_de_parte: partNumber,
       upc: upc,
-      maker: maker,
-      category: category,
-      subcategory: subcategory,
+      fabricante: maker,
+      categoria: category,
+      subcategoria: subcategory,
       msrp: msrp,
-      price: price,
-      specifications: specs,
-      dimensions: dims,
-      units: inv
+      precio: price,
+      especificaciones: specs,
+      dimensiones: dims,
+      existencias: inv
     }
 
   }
