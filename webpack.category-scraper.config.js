@@ -19,7 +19,7 @@ module.exports = {
   target: 'node',
 
   entry: [
-    './src/category_scraper'
+    './src/scrapers/category_scraper'
   ],
 
   output: {

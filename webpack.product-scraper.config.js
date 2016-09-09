@@ -14,12 +14,13 @@ fs.readdirSync('node_modules')
 // Manually add the native Phantom JS modules used in the project
 nodeModules['webpage'] = 'commonjs webpage';
 nodeModules['system'] = 'commonjs system';
+nodeModules['fs'] = 'commonjs fs';
 
 module.exports = {
   target: 'node',
 
   entry: [
-    './src/product_scraper'
+    './src/scrapers/product_scraper'
   ],
 
   output: {
