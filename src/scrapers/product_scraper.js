@@ -17,7 +17,7 @@ import {
 } from '../../config/settings';
 
 import { configurePhantomJS } from '../lib/phantom_configuration';
-
+import _ from 'lodash';
 
 /* BROWSER EVALUATED FUNCTIONS */
 
@@ -174,6 +174,7 @@ function scrapeProducts(phantom, page, args) {
     if(i >= productUrls.length){
       exit(phantom, SUCCESS_EXIT_CODE);
     }
+    info(`Processing product ${i+1} out of ${productUrls.length}.`);
     handleProductPage(productUrls[i]);
     i++;
   }
@@ -187,7 +188,12 @@ function scrapeProducts(phantom, page, args) {
 
       window.setTimeout(function() {
         const data = page.evaluate(productData);
-        log(JSON.stringify(data), 'DATA');
+        if (_.isEmpty(data)) {
+          info(`Could not retrieve information for product at: ${url}`);
+        }
+        else {
+          log(JSON.stringify(data), 'DATA');          
+        }
         nextProduct();
       }, SPECS_LOAD_WAIT_TIME);
     });
@@ -227,10 +233,6 @@ function run(phantom) {
   configurePhantomJS(phantom, page);
 
   info(`Starting product scraper for ${productUrls.length} product urls.`);
-  for (let i = 0; i < productUrls.length; ++i) {
-    info("    " + productUrls[i]);
-  }
-
   /* Login and then proceed to scrapeProducts function */
   login(phantom, page, scrapeProducts, productUrls);
 }

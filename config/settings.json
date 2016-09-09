@@ -1,5 +1,5 @@
 {
-  "BASE_URL": "https://www.imstores.com",
+  "BASE_URL": "https://www.imstores.com/Ingrammicromx",
   "LOGIN_URL": "https://www.imstores.com/Ingrammicromx/login/login.aspx",
   "LOGGED_IN_URL": "https://www.imstores.com/Ingrammicromx/default.aspx",
   "LOGOUT_URL": "https://www.imstores.com/Ingrammicromx/login/logoff.aspx",
