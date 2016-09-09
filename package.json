@@ -5,13 +5,12 @@
   "main": "src/main.js",
   "scripts": {
     "clean": "rm -r node_modules/* dist/*",
-    "build": "webpack",
-    "start": "./node_modules/phantomjs/bin/phantomjs dist/scraper.js",
-    "start-log": "./node_modules/phantomjs/bin/phantomjs dist/scraper.js 2>&1 | tee \"$(date '+%F-%T')-run.log\"",
-    "start-debug": "./node_modules/phantomjs/bin/phantomjs --debug=true dist/scraper.js",
-    "start-debug-log": "./node_modules/phantomjs/bin/phantomjs --debug=true dist/scraper.js 2>&1 | tee \"$(date '+%F-%T')-run.log\"",
-    "flow": "flow; test $? -eq 0 -o $? -eq 2",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "webpack --config webpack.category-scraper.config.js; webpack --config webpack.product-scraper.config.js;",
+    "category-scraper": "./node_modules/phantomjs/bin/phantomjs dist/category_scraper.js",
+    "product-scraper": "./node_modules/phantomjs/bin/phantomjs dist/product_scraper.js",
+    "category-scraper-debug": "./node_modules/phantomjs/bin/phantomjs --debug=true dist/category_scraper.js",
+    "product-scraper-debug": "./node_modules/phantomjs/bin/phantomjs --debug=true dist/product_scraper.js",
+    "flow": "flow; test $? -eq 0 -o $? -eq 2"
   },
   "keywords": [
     "scrape"
